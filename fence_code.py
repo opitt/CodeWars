@@ -1,3 +1,6 @@
+# Rail Fence Cipher: Encoding and Decoding
+# https://www.codewars.com/kata/58c5577d61aefcf3ff000081
+
 from itertools import cycle
 
 def encode_rail_fence_cipher(s, n):
