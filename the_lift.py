@@ -13,9 +13,9 @@ class Dinglemouse(object):
         self.lift_stops = [self.lift_level]
         self.UP = True
         self.DOWN = False
-        self.lift_direction = self.DOWN
+        self.lift_direction = self.UP
 
-    def stopHere(self):
+    def stoppedHere(self):
         if self.lift_stops[-1] != self.lift_level:
             self.lift_stops.append(self.lift_level)
 
@@ -51,12 +51,12 @@ class Dinglemouse(object):
         """
         queue = self.getQueueHere()
         waiting = [
-            person
-            for person in queue
+            goto
+            for goto in queue
             if self.lift_direction == self.UP
-            and person > self.lift_level
+            and goto > self.lift_level
             or self.lift_direction == self.DOWN
-            and person < self.lift_level
+            and goto < self.lift_level
         ]
         return waiting
 
@@ -107,53 +107,34 @@ class Dinglemouse(object):
         pass
 
     def nextLevelUp(self):
-        # When empty the Lift tries to be smart. For example,
-        if self.liftIsEmpty():
-            #  If it was going up then it may continue up to collect the highest floor person wanting to go down
-            for level in [l for l in sorted(self.queues.keys(), reverse=True) if l> self.lift_level]:
-                if any(map(lambda goingto: goingto < level, self.queues[level])):
-                    self.lift_level = level
-                    break
-            else:
-                self.lift_level += 1
-        else:
-            self.lift_level += 1
-        return self.lift_level
+        self.lift_level += 1
+        if self.lift_level == self.level_max:
+           self.lift_direction = self.DOWN
 
     def nextLevelDown(self):
-        # When empty the Lift tries to be smart. For example,
-        if self.liftIsEmpty():
-            #  If it was going down then it may continue down to collect the lowest floor person wanting to go up
-            for level in [l for l in sorted(self.queues.keys()) if l<self.lift_level]:
-                if any(map(lambda goingto: goingto > level, self.queues[level])):
-                    self.lift_level = level
-                    break
-            else:
-                self.lift_level -= 1
-        else:
-            self.lift_level -= 1
-        return self.lift_level
+        self.lift_level -= 1
+        if self.lift_level == self.level_min:
+           self.lift_direction = self.UP
 
     def nextLevel(self):
         if self.lift_direction == self.UP:
-            return self.nextLevelUp()
+            self.nextLevelUp()
         else:
-            return self.nextLevelDown()
+            self.nextLevelDown()
 
     def pauseLift(self):
         self.lift_level = 0
-        self.stopHere()
+        self.stoppedHere()
 
     def liftController(self):
         # When called, the Lift will stop at a floor even if it is full,
         # although unless somebody gets off nobody else can get on!
-        self.nextDirectionHere()
         if self.getPeopleWantToLeaveHere():
-            self.stopHere()
             self.letPeopleLeaveHere()
+            self.stoppedHere()
         if len(self.getPeopleWantToGoInLiftDirectionHere()):
-            self.stopHere()
             self.letPeopleEnterHere()
+            self.stoppedHere()
         self.nextLevel()
 
     def theLift(self):
