@@ -15,18 +15,14 @@ class Dinglemouse(object):
         self.DOWN = False
         self.lift_direction = self.UP
 
-    def stoppedHere(self):
+    def trackStop(self):
         if self.lift_stops[-1] != self.lift_level:
             self.lift_stops.append(self.lift_level)
 
     def getPeopleToServe(self):
         return sum(len(q) for l, q in self.queues.items()) + len(self.lift_people)
 
-    def getQueueHere(self):
-        """returns the queue at the current lift level"""
-        return self.queues[self.lift_level]
-
-    def getPeopleWantToLeaveHere(self):
+    def peopleWantToLeaveHere(self):
         return self.lift_people.count(self.lift_level)
 
     def getPeopleToServeInDirectionHere(self):
@@ -44,15 +40,14 @@ class Dinglemouse(object):
                         waiting+=1
         return waiting
 
-    def getPeopleWantToGoInLiftDirectionHere(self):
+    def peopleWaitingMyDirection(self):
         """
         Returns:
-            list: people who want to go in the current direction of the lift
+            list: people who want to go in the direction of the lift
         """
-        queue = self.getQueueHere()
         waiting = [
             goto
-            for goto in queue
+            for goto in self.queues[self.lift_level]
             if self.lift_direction == self.UP
             and goto > self.lift_level
             or self.lift_direction == self.DOWN
@@ -61,7 +56,7 @@ class Dinglemouse(object):
         return waiting
 
     def letPeopleLeaveHere(self):
-        n = self.getPeopleWantToLeaveHere()
+        n = self.peopleWantToLeaveHere()
         while n:
             self.lift_people.remove(self.lift_level)
             n -= 1
@@ -69,7 +64,7 @@ class Dinglemouse(object):
 
     def letPeopleEnterHere(self):
         free = self.getLiftFreeCapacity()
-        waiting = self.getPeopleWantToGoInLiftDirectionHere()
+        waiting = self.peopleWaitingMyDirection()
         for person in waiting[:free]:
             self.queues[self.lift_level].remove(person)
             self.lift_people.append(person)
@@ -78,69 +73,35 @@ class Dinglemouse(object):
     def getLiftFreeCapacity(self):
         return self.lift_capacity - len(self.lift_people)
 
-    def liftIsEmpty(self):
-        return self.getLiftFreeCapacity() == self.lift_capacity
-
-    def nextDirectionHere(self):
-        if self.lift_level == self.level_max:
-            self.lift_direction = self.DOWN
-        elif self.lift_level == self.level_min:
-            self.lift_direction = self.UP
-        elif self.lift_direction == self.UP:
-            # The Lift never changes direction until there are no more people wanting to get on/off in the direction it is already travelling
-            if (
-                not any(
-                    map(lambda goingto: goingto > self.lift_level, self.lift_people)
-                )
-                and self.getPeopleToServeInDirectionHere() == 0
-            ):
-                self.lift_direction = self.DOWN
-        elif self.lift_direction == self.DOWN:
-            # The Lift never changes direction until there are no more people wanting to get on/off in the direction it is already travelling
-            if (
-                not any(
-                    map(lambda goingto: goingto < self.lift_level, self.lift_people)
-                )
-                and self.getPeopleToServeInDirectionHere() == 0
-            ):
-                self.lift_direction = self.UP
-        pass
-
-    def nextLevelUp(self):
-        self.lift_level += 1
-        if self.lift_level == self.level_max:
-           self.lift_direction = self.DOWN
-
-    def nextLevelDown(self):
-        self.lift_level -= 1
-        if self.lift_level == self.level_min:
-           self.lift_direction = self.UP
-
-    def nextLevel(self):
+    def nextLevelFromHere(self):
         if self.lift_direction == self.UP:
-            self.nextLevelUp()
+            self.lift_level += 1
+            if self.lift_level == self.level_max:
+                self.lift_direction = self.DOWN
         else:
-            self.nextLevelDown()
+            self.lift_level -= 1
+            if self.lift_level == self.level_min:
+               self.lift_direction = self.UP
 
     def pauseLift(self):
         self.lift_level = 0
-        self.stoppedHere()
+        self.trackStop()
 
-    def liftController(self):
-        # When called, the Lift will stop at a floor even if it is full,
-        # although unless somebody gets off nobody else can get on!
-        if self.getPeopleWantToLeaveHere():
+    def liftLevelController(self):
+        if self.peopleWantToLeaveHere():
             self.letPeopleLeaveHere()
-            self.stoppedHere()
-        if len(self.getPeopleWantToGoInLiftDirectionHere()):
+            self.trackStop()
+        if len(self.peopleWaitingMyDirection()):
             self.letPeopleEnterHere()
-            self.stoppedHere()
-        self.nextLevel()
+            self.trackStop()
+        if self.getPeopleToServe() == 0:
+            self.pauseLift()
+        else:
+            self.nextLevelFromHere()
 
     def theLift(self):
         while self.getPeopleToServe():
-            self.liftController()
-        self.pauseLift()
+            self.liftLevelController()
         return self.lift_stops
 
 
