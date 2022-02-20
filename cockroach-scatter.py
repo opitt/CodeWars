@@ -1,139 +1,84 @@
 def cockroaches(room):
-    # Your code here!
+
     BUG_SCATTER = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    
-    holes_u = {x:int(h) for x,h in enumerate(room[0]) if h not in "+-"}
-    holes_d = {x:int(h) for x,h in enumerate(room[-1]) if h not in "+-"}
-    holes_l = {x:int(h) for x,h in enumerate(list(zip(*room))[0]) if h not in "+|"}
-    holes_r = {x:int(h) for x,h in enumerate(list(zip(*room))[-1]) if h not in "+|"}
-    cockroach_yx={"U":[], "D": [], "L":[], "R":[]}
-    for y,row in enumerate(room):
+
+    HOLES = {
+        "U": {x: int(h) for x, h in enumerate(room[0]) if h not in "+-"},
+        "L": {x: int(h) for x, h in enumerate(list(zip(*room))[0]) if h not in "+|"},
+        "D": {x: int(h) for x, h in enumerate(room[-1]) if h not in "+-"},
+        "R": {x: int(h) for x, h in enumerate(list(zip(*room))[-1]) if h not in "+|"},
+    }
+    # collect the bugs based on the direction they look
+    bugs_yx = {"U": [], "L": [], "D": [], "R": []}
+    for y, row in enumerate(room):
         for x, c in enumerate(row):
             if c in "UDLR":
-                cockroach_yx[c].append((y,x))
-    
-    for bug_y,bug_x in cockroach_yx["U"]:
-        hole_x = max([x for x in holes_u.keys() if x <= bug_x], default=None )
-        if hole_x != None:
-            hole = holes_u[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = min(holes_l.keys(), default=None)
-        if hole_y != None:
-            hole = holes_l[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = min(holes_d.keys(), default=None)
-        if hole_x != None:
-            hole = holes_d[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = max(holes_r.keys(), default=None)
-        if hole_y != None:
-            hole = holes_r[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = max(holes_u.keys(), default=None)
-        if hole_x != None:
-            hole = holes_u[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
+                bugs_yx[c].append(y if c in "LR" else x)
 
-    for bug_y,bug_x in cockroach_yx["L"]:
-        hole_y = min([y for y in holes_l.keys() if y >= bug_y], default=None )
-        if hole_y != None:
-            hole = holes_l[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = min(holes_d.keys(), default=None)
-        if hole_x != None:
-            hole = holes_d[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = max(holes_r.keys(), default=None)
-        if hole_y != None:
-            hole = holes_r[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = max(holes_u.keys(), default=None)
-        if hole_x != None:
-            hole = holes_u[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = min(holes_l.keys(), default=None)
-        if hole_y != None:
-            hole = holes_l[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
+    # if a bug looks in direction "U" and if there is not hole at that wall, we need to go left to other walls
+    BUG_DIR_WALLSEQUENCE = {"U":"LDRU",
+                      "L": "DRUL",
+                      "D": "RULD",
+                      "R": "ULDR",
+    }
 
-    for bug_y,bug_x in cockroach_yx["D"]:
-        hole_x = min([x for x in holes_d.keys() if x >= bug_x], default=None )
-        if hole_x != None:
-            hole = holes_d[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = max(holes_r.keys(), default=None)
-        if hole_y != None:
-            hole = holes_r[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = max(holes_u.keys(), default=None)
-        if hole_x != None:
-            hole = holes_u[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = min(holes_l.keys(), default=None)
-        if hole_y != None:
-            hole = holes_l[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = min(holes_d.keys(), default=None)
-        if hole_x != None:
-            hole = holes_d[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
+    def first_left(wall, bug_pos=None):
+        if wall in "UR":
+            _, hole = max(
+                [
+                    (pos, hole)
+                    for pos, hole in HOLES[wall].items()
+                    if bug_pos == None or pos <= bug_pos
+                ],
+                key=lambda ph: ph[0],
+                default=(None, None),
+            )
+        else:
+            _, hole = min(
+                [
+                    (pos, hole)
+                    for pos, hole in HOLES[wall].items()
+                    if bug_pos == None or pos >= bug_pos
+                ],
+                key=lambda ph: ph[0],
+                default=(None, None),
+            )
+        return hole
 
-    for bug_y,bug_x in cockroach_yx["R"]:
-        hole_y = max([y for y in holes_r.keys() if y <= bug_y], default=None )
-        if hole_y != None:
-            hole = holes_r[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = max(holes_u.keys(), default=None)
-        if hole_x != None:
-            hole = holes_u[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = min(holes_l.keys(), default=None)
-        if hole_y != None:
-            hole = holes_l[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_x = min(holes_d.keys(), default=None)
-        if hole_x != None:
-            hole = holes_d[hole_x]
-            BUG_SCATTER[hole] += 1
-            continue
-        hole_y = max(holes_r.keys(), default=None)
-        if hole_y != None:
-            hole = holes_r[hole_y]
-            BUG_SCATTER[hole] += 1
-            continue
+    for bug_dir in "ULDR":
+        for pos in bugs_yx[bug_dir]:
+            # check, if there is a hole left of my position towards the wall
+            hole = first_left(bug_dir, pos)
+            if hole != None:
+                BUG_SCATTER[hole] += 1
+                continue
+            # find the first hole going LEFT wall
+            for wall in BUG_DIR_WALLSEQUENCE[bug_dir]:
+                hole = first_left(wall)
+                if hole != None:
+                    BUG_SCATTER[hole] += 1
+                    break
+            if hole != None:
+                # next bug
+                continue
 
     return BUG_SCATTER
 
-expected = [1,2,2,5,0,0,0,0,0,0]
-room=["+----------------0---------------+",
-      "|                                |",
-      "|                                |",
-      "|          U        D            |",
-      "|     L                          |",
-      "|              R                 |",
-      "|           L                    |",
-      "|  U                             1",
-      "3        U    D                  |",
-      "|         L              R       |",
-      "|                                |",
-      "+----------------2---------------+"]
+
+expected = [1, 2, 2, 5, 0, 0, 0, 0, 0, 0]
+room = [
+    "+----------------0---------------+",
+    "|                                |",
+    "|                                |",
+    "|          U        D            |",
+    "|     L                          |",
+    "|              R                 |",
+    "|           L                    |",
+    "|  U                             1",
+    "3        U    D                  |",
+    "|         L              R       |",
+    "|                                |",
+    "+----------------2---------------+",
+]
 
 print(cockroaches(room), expected)
